@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>As a cat says...</title>
+</head>
+<style>
+  body {
+    text-align: center;
+  }
+
+  .main-card button {
+    position: relative;
+    left: -45px;
+    bottom: 15px;
+  }
+
+  .favorites {
+    list-style: none;
+    display: flex;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 15px;
+  }
+
+  /*In React, you can directly put it as a prop such as <style={{width: "150px"}} >*/
+  /*  .favorites img {
+    width: 150px;
+  } */
+</style>
+
+<body>
+  <div id="app"></div> <!-- marker for using React.js -->
+
+
+  <!-- Load React -->
+  <!-- Note: when deploying, replace "development.js" with "production.min.js" -->
+  <script src="https://unpkg.com/react@17/umd/react.development.js" crossorigin></script>
+  <script src="https://unpkg.com/react-dom@17/umd/react-dom.development.js" crossorigin></script>
+  <!-- Load Babel (JSX, JavaScript XML (Extensible Markup Language)) -->
+  <script src="https://unpkg.com/babel-standalone@6/babel.min.js"></script>
+
+
+  <script type="text/babel"> // MUST add type="text/babel" in script
+    // local storage for saving count data and data of how may times the heart being pressed  
+    const jsonLocalStorage = {
+      setItem: (key, value) => {
+        localStorage.setItem(key, JSON.stringify(value));
+      },
+      getItem: (key) => {
+        return JSON.parse(localStorage.getItem(key));
+      },
+    };
+
+    console.log("Meow!");
+
+    // React.js code is much simpler than original JS-style code
+
+    {/*create a component using arrow function without applying ES6+ destructuring 
+    Arrow function: https://joshua1988.github.io/vue-camp/es6+/fat-arrow.html
+    ES6+ Destructuring: https://joshua1988.github.io/vue-camp/es6+/destructuring.html */ }
+
+    {/*component function must start with uppercase. 
+    Conventionally, the parameter for the function is called 'props (properties?)' */ }
+    {/*'children' is because "The cat 1 says..." is directly written in <CatSays></CatSays> tag
+    in const "apps" */ }
+    const CatSays = (props) => {
+      return <h1>{props.children}</h1>;
+    }
+
+    const LineForm = ({ updateMainCat }) => {
+      {/* Form Validation (폼 검증, error handling):
+      create a state that shows an error message when typing in Korean/leave it empty*/ }
+      const includesHangeul = (text) => /[ㄱ-ㅎ|ㅏ-ㅣ|가-힣]/i.test(text);
+      const [value, setValue] = React.useState('');
+      const [errorMessage, setErrorMessage] = React.useState(""); {/* "" is for initialising */ }
+
+      function handleInputChange(e) {
+        const userValue = e.target.value;
+
+        if (includesHangeul(userValue)) {
+          setErrorMessage("You can't type in Korean.");
+        } else {
+          setErrorMessage(""); {/* initialises the error message once the user erases Korean */ }
+        }
+
+        setValue(userValue.toUpperCase()); {/*converts user input to uppercase*/ }
+      }
+
+      function handleFormSubmit(e) {
+        e.preventDefault();
+        setErrorMessage(""); {/* another way of initialising the error message (putting this code 1st) */ }
+
+        if (value === '') {
+          setErrorMessage("You can't make a meme with an empty value.");
+          return; {/*terminates the execution if value is empty (not to reach updateMainCat)*/ }
+        }
+        updateMainCat();
+      }
+
+      return (
+        <form onSubmit={handleFormSubmit} >
+          <input
+            type="text"
+            name="name"
+            placeholder="Please input a line in English"
+            value={value}
+            onChange={handleInputChange}
+          />
+          <button type="submit">Create</button>
+          <p style={{ color: "red" }}>{errorMessage}</p>
+        </form >
+      );
+    };
+
+    {/*create a component using normal function*/ }
+    function CatItem(props) {
+      return (
+        <li>
+          {/*value (e.g. width) of a key (e.g. style) must be a string*/}
+          <img src={props.img} style={{ width: "150px", border: "1px solid blue" }} />
+        </li>
+      );
+    }
+
+    {/*create a component using arrow function WITH applying ES6+ destructuring*/ }
+    const MainCard = ({ img, onHeartClick }) => {
+      {/*function for showing the message when the user pushes the heart button.
+      'handle XXX' is the convention of naming an event-handling function in React*/ }
+
+
+      return (
+        <div className="main-card"> {/*In React.js, you have to use 'className' instead of 'class'*/}
+          <img src={img} alt="cat" width="400" />
+          {/*show the messages when the user clicks/hovers the cursor on the heart button
+          NOTE: in React (JSX grammar), onClick must be camel case, unlike CSS (onclick)*/}
+          <button
+            onClick={onHeartClick}>
+            🤍
+          </button>
+        </div >
+      );
+    }
+
+    function Favorites({ favorites }) {
+      return (
+        <ul className="favorites">
+          {favorites.map((cat) => (
+            <CatItem img={cat} key={cat} />
+          ))} {/*map must have key id for each item*/}
+
+
+          {/* To use JavaScript grammar (esp. 표현식 (expressions)) within React, it must be within curly brackets 
+          like below. Comments must be used like {/* (// cannot be used) */}
+
+          {/*Expression:  any valid set of literals, variables, operators, and expressions that evaluates to a single value. 
+          The value may be a number, a string, or a logical value. 
+          e.g. x = 7 is an expression that assigns x the value 7. This expression itself evaluates to 7. Such expressions use assignment operators. 
+          On the other hand, the expression 3 + 4 simply evaluates to 7; it does not perform an assignment. 
+          The operators used in such expressions are referred to simply as operators.  
+
+          A conditional expression can have one of two values based on a condition. The syntax is
+          (condition) ? val1 : val2
+          If condition is true, the expression has the value of val1, Otherwise it has the value of val2.
+          e.g. status = (age >= 18) ? "adult" : "minor"
+          */}
+
+          {/* When do you not use React, you have to write a code like below:
+          <li>
+          <img src="https://cataas.com/cat/60b73094e04e18001194a309/says/react" alt="cat" />
+          </li>
+          <li>
+          <img src="https://cataas.com/cat/60b73094e04e18001194a309/says/react" alt="cat" />
+          </li>
+          <li>
+          <img src="https://cataas.com/cat/60b73094e04e18001194a309/says/react" alt="cat" />
+          </li>
+          */}
+        </ul>
+      );
+    }
+
+    {/*const App -> parent component, const LineForm -> child component */ }
+    {/*React.useState, function handleFormSubmit -> state lifted up from child to parent
+      to be shared (with this technique, one function can be used multiple times)*/}
+    const App = () => {
+      const CAT1 = "https://cataas.com/cat/60b73094e04e18001194a309/says/react";
+      const CAT2 = "https://cataas.com//cat/5e9970351b7a400011744233/says/inflearn";
+      const CAT3 = "https://cataas.com/cat/595f280b557291a9750ebf65/says/JavaScript";
+
+      {/*create a system to automatically increse the number of the cat saying*/ }
+      const [counter, setCounter] = React.useState(
+        jsonLocalStorage.getItem('counter')
+      ); {/*count starts from 1, 'counter' is the 1st(index 0) argument (인자)  
+         'setCounter' is the 2nd(index 1) argument
+         You need to make the counter a number such as by Number() since localStorage stores 
+         a value as a string by default. */ }
+
+      {/* More descriptive version of the codes above:
+
+      const counterState = React.useState(1); 
+      const counter = counterState[0]; 
+      const setCounter = counterState[1]; 
+      */ }
+
+      const [mainCat, setMainCat] = React.useState(CAT1);
+      const [favorites, setFavorites] = React.useState(
+        // || [] meaning 'OR empty array' to prevent Uncaught TypeError: Cannot read properties of null (reading 'map') 
+        jsonLocalStorage.getItem("favorites") || []
+      );
+
+      function updateMainCat() {
+        setMainCat(CAT2);
+        const nextCounter = counter + 1;
+        setCounter(nextCounter);
+        {/*store the data to the localStorage API of the browser*/ }
+        jsonLocalStorage.setItem("counter", nextCounter);
+      }
+
+      function handleHeartClick() {
+        const nextFavorites = [...favorites, mainCat]
+        {/*console.log("Heart pushed."); -> Only use it for checking whether it is working*/ }
+        setFavorites(nextFavorites); {/*...favorites = [CAT1, CAT2]
+                                            from now, setFavorites = [CAT1, CAT2, CAT3] */}
+        jsonLocalStorage.setItem("favorites", nextFavorites);
+      }
+
+      return (
+        < div > {/*MUST use a root DOM (Document Object Model) element (최상위 태그) 
+            since React/JSX only can render only one element.
+            Therefore, <div> tag is conventionally used as the root DOM element tag
+            to make 'ReactDOM.render()' able to render multiple elements simultaneously.*/}
+
+          < CatSays > The cat {counter} says... </CatSays > {/*Directly uses tag -> 'children' would be used*/}
+          < LineForm updateMainCat={updateMainCat} />
+          <MainCard img={mainCat} onHeartClick={handleHeartClick} /> {/* 'on'HeartClick -> following convention of naming props */}
+          <Favorites favorites={favorites} />
+        </div >
+      );
+    };
+
+
+    const drawHere = document.querySelector('#app'); //To find the marker
+
+    ReactDOM.render(<App />, drawHere); /* To use React. HTML marker (e.g. <div id="app"></div>) is
+                                    needed on th part that you want to use. Made const 'drawHere'
+                                    to put the marker in the query selector and use as parameter for
+                                    'ReactDOM.render'*/
+
+  </script>
+</body>
+
+</html>
