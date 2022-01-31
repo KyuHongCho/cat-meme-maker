@@ -25,11 +25,6 @@
     flex-wrap: wrap;
     gap: 15px;
   }
-
-  /*In React, you can directly put it as a prop such as <style={{width: "150px"}} >*/
-  /*  .favorites img {
-    width: 150px;
-  } */
 </style>
 
 <body>
@@ -55,18 +50,15 @@
       },
     };
 
-    console.log("Meow!");
+    const fetchCat = async (text) => {
+      const OPEN_API_DOMAIN = "https://cataas.com";
+      const response = await fetch(
+        `${OPEN_API_DOMAIN}/cat/says/${text}?json=true`
+      );
+      const responseJson = await response.json();
+      return `${OPEN_API_DOMAIN}/${responseJson.url}`;
+    };
 
-    // React.js code is much simpler than original JS-style code
-
-    {/*create a component using arrow function without applying ES6+ destructuring 
-    Arrow function: https://joshua1988.github.io/vue-camp/es6+/fat-arrow.html
-    ES6+ Destructuring: https://joshua1988.github.io/vue-camp/es6+/destructuring.html */ }
-
-    {/*component function must start with uppercase. 
-    Conventionally, the parameter for the function is called 'props (properties?)' */ }
-    {/*'children' is because "The cat 1 says..." is directly written in <CatSays></CatSays> tag
-    in const "apps" */ }
     const CatSays = (props) => {
       return <h1>{props.children}</h1>;
     }
@@ -98,7 +90,7 @@
           setErrorMessage("You can't make a meme with an empty value.");
           return; {/*terminates the execution if value is empty (not to reach updateMainCat)*/ }
         }
-        updateMainCat();
+        updateMainCat(value);
       }
 
       return (
@@ -127,10 +119,11 @@
     }
 
     {/*create a component using arrow function WITH applying ES6+ destructuring*/ }
-    const MainCard = ({ img, onHeartClick }) => {
+    const MainCard = ({ img, onHeartClick, alreadyFavorite }) => {
       {/*function for showing the message when the user pushes the heart button.
       'handle XXX' is the convention of naming an event-handling function in React*/ }
 
+      const heartIcon = alreadyFavorite ? "💖" : "🤍";
 
       return (
         <div className="main-card"> {/*In React.js, you have to use 'className' instead of 'class'*/}
@@ -139,46 +132,24 @@
           NOTE: in React (JSX grammar), onClick must be camel case, unlike CSS (onclick)*/}
           <button
             onClick={onHeartClick}>
-            🤍
+            {heartIcon}
           </button>
         </div >
       );
     }
 
     function Favorites({ favorites }) {
+      //when the user hasn't clicked heart, show the message to recommend (Conditional Rendering)
+      if (favorites.length === 0) {
+        return <div>Save your own meme by clicking 🤍</div>
+      }
+
       return (
         <ul className="favorites">
           {favorites.map((cat) => (
             <CatItem img={cat} key={cat} />
           ))} {/*map must have key id for each item*/}
 
-
-          {/* To use JavaScript grammar (esp. 표현식 (expressions)) within React, it must be within curly brackets 
-          like below. Comments must be used like {/* (// cannot be used) */}
-
-          {/*Expression:  any valid set of literals, variables, operators, and expressions that evaluates to a single value. 
-          The value may be a number, a string, or a logical value. 
-          e.g. x = 7 is an expression that assigns x the value 7. This expression itself evaluates to 7. Such expressions use assignment operators. 
-          On the other hand, the expression 3 + 4 simply evaluates to 7; it does not perform an assignment. 
-          The operators used in such expressions are referred to simply as operators.  
-
-          A conditional expression can have one of two values based on a condition. The syntax is
-          (condition) ? val1 : val2
-          If condition is true, the expression has the value of val1, Otherwise it has the value of val2.
-          e.g. status = (age >= 18) ? "adult" : "minor"
-          */}
-
-          {/* When do you not use React, you have to write a code like below:
-          <li>
-          <img src="https://cataas.com/cat/60b73094e04e18001194a309/says/react" alt="cat" />
-          </li>
-          <li>
-          <img src="https://cataas.com/cat/60b73094e04e18001194a309/says/react" alt="cat" />
-          </li>
-          <li>
-          <img src="https://cataas.com/cat/60b73094e04e18001194a309/says/react" alt="cat" />
-          </li>
-          */}
         </ul>
       );
     }
@@ -192,51 +163,63 @@
       const CAT3 = "https://cataas.com/cat/595f280b557291a9750ebf65/says/JavaScript";
 
       {/*create a system to automatically increse the number of the cat saying*/ }
-      const [counter, setCounter] = React.useState(
-        jsonLocalStorage.getItem('counter')
-      ); {/*count starts from 1, 'counter' is the 1st(index 0) argument (인자)  
-         'setCounter' is the 2nd(index 1) argument
-         You need to make the counter a number such as by Number() since localStorage stores 
-         a value as a string by default. */ }
 
-      {/* More descriptive version of the codes above:
-
-      const counterState = React.useState(1); 
-      const counter = counterState[0]; 
-      const setCounter = counterState[1]; 
-      */ }
+      //access to local storage API only when the app page initialises -> increases speed -> performance optimisation
+      const [counter, setCounter] = React.useState(() => {
+        return jsonLocalStorage.getItem('counter');
+      });
 
       const [mainCat, setMainCat] = React.useState(CAT1);
-      const [favorites, setFavorites] = React.useState(
+      const [favorites, setFavorites] = React.useState(() => {
         // || [] meaning 'OR empty array' to prevent Uncaught TypeError: Cannot read properties of null (reading 'map') 
-        jsonLocalStorage.getItem("favorites") || []
-      );
+        return jsonLocalStorage.getItem("favorites") || []
+      });
 
-      function updateMainCat() {
-        setMainCat(CAT2);
-        const nextCounter = counter + 1;
-        setCounter(nextCounter);
-        {/*store the data to the localStorage API of the browser*/ }
-        jsonLocalStorage.setItem("counter", nextCounter);
+      //to make the heart red if it has already been clicked
+      const alreadyFavorite = favorites.includes(mainCat)
+
+      //replace MainCat's data to API's ones when the user enters the page
+      async function setInitialCat() {
+        const newCat = await fetchCat('First cat');
+        setMainCat(newCat);
+      }
+
+      //to prevent callback hell
+      React.useEffect(() => {
+        setInitialCat();
+      }, []); // empty array -> data will only be called when the component is called
+
+
+
+      async function updateMainCat(value) {
+        const newCat = await fetchCat(value);
+
+        setMainCat(newCat);
+
+        // to prevent the mismatch of counter and setCounter
+        setCounter((prev) => {
+          const nextCounter = prev + 1;
+          jsonLocalStorage.setItem("counter", nextCounter); //store the data to the localStorage API of the browser
+          return nextCounter;
+        });
       }
 
       function handleHeartClick() {
-        const nextFavorites = [...favorites, mainCat]
+        const nextFavorites = [...favorites, mainCat];
         {/*console.log("Heart pushed."); -> Only use it for checking whether it is working*/ }
         setFavorites(nextFavorites); {/*...favorites = [CAT1, CAT2]
                                             from now, setFavorites = [CAT1, CAT2, CAT3] */}
         jsonLocalStorage.setItem("favorites", nextFavorites);
       }
 
-      return (
-        < div > {/*MUST use a root DOM (Document Object Model) element (최상위 태그) 
-            since React/JSX only can render only one element.
-            Therefore, <div> tag is conventionally used as the root DOM element tag
-            to make 'ReactDOM.render()' able to render multiple elements simultaneously.*/}
+      // When the app initialises, doesn't show the counter to prevent it starts from 0
+      const counterTitle = counter === null ? "" : counter;
 
-          < CatSays > The cat {counter} says... </CatSays > {/*Directly uses tag -> 'children' would be used*/}
+      return (
+        < div >
+          < CatSays > The cat {counterTitle} says... </CatSays > {/*Directly uses tag -> 'children' would be used*/}
           < LineForm updateMainCat={updateMainCat} />
-          <MainCard img={mainCat} onHeartClick={handleHeartClick} /> {/* 'on'HeartClick -> following convention of naming props */}
+          <MainCard img={mainCat} onHeartClick={handleHeartClick} alreadyFavorite={alreadyFavorite} /> {/* 'on'HeartClick -> following convention of naming props */}
           <Favorites favorites={favorites} />
         </div >
       );
@@ -245,10 +228,7 @@
 
     const drawHere = document.querySelector('#app'); //To find the marker
 
-    ReactDOM.render(<App />, drawHere); /* To use React. HTML marker (e.g. <div id="app"></div>) is
-                                    needed on th part that you want to use. Made const 'drawHere'
-                                    to put the marker in the query selector and use as parameter for
-                                    'ReactDOM.render'*/
+    ReactDOM.render(<App />, drawHere);
 
   </script>
 </body>
