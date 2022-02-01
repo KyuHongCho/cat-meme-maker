@@ -1,6 +1,6 @@
 # CAT MEME MAKER (고양이 짤방 생성기)
 
-https://milooy.github.io/cat-jjal-maker/
+https://kyuhongcho.github.io/cat-meme-maker/
 
 > An web app using React.js to create cat meme pictures. 
 
